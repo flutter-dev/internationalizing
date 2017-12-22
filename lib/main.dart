@@ -8,15 +8,23 @@ void main() {
   runApp(new MyApp());
 }
 
+GlobalKey<_FreeLocalizations> freeLocalizationStateKey = new GlobalKey<_FreeLocalizations>();
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return new MaterialApp(
-      title: DemoLocalizations.of(context).taskTitle,
+      onGenerateTitle: (context){
+        return DemoLocalizations.of(context).taskTitle;
+      },
       theme: new ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: new MyHomePage(title: DemoLocalizations.of(context).titleBarTitle),
+      home: new Builder(builder: (context){
+        return new FreeLocalizations(
+          key: freeLocalizationStateKey,
+          child: new MyHomePage(),
+        );
+      }),
       localizationsDelegates: [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -31,9 +39,8 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+  MyHomePage({Key key}) : super(key: key);
 
-  final String title;
 
   @override
   _MyHomePageState createState() => new _MyHomePageState();
@@ -41,7 +48,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
-
+  bool flag = true;
   void _incrementCounter() {
     showDatePicker(context: context,
         initialDate: new DateTime.now(),
@@ -49,11 +56,19 @@ class _MyHomePageState extends State<MyHomePage> {
         lastDate: new DateTime.now().add(new Duration(days: 30))).then((v) {});
   }
 
+  void changeLocale(){
+    if(flag){
+      freeLocalizationStateKey.currentState.changeLocale(const Locale('zh',"CH"));
+    }else{
+      freeLocalizationStateKey.currentState.changeLocale(const Locale('en',"US"));
+    }
+    flag = !flag;
+  }
   @override
   Widget build(BuildContext context) {
     return new Scaffold(
       appBar: new AppBar(
-        title: new Text(widget.title),
+        title: new Text(DemoLocalizations.of(context).titleBarTitle),
       ),
       body: new Center(
         child: new Column(
@@ -73,7 +88,7 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
       floatingActionButton: new FloatingActionButton(
-        onPressed: _incrementCounter,
+        onPressed: changeLocale,
         tooltip: DemoLocalizations.of(context).inc,
         child: new Icon(Icons.add),
       ),
@@ -143,4 +158,36 @@ class DemoLocalizationsDelegate extends LocalizationsDelegate<DemoLocalizations>
   }
 
   static DemoLocalizationsDelegate delegate = const DemoLocalizationsDelegate();
+}
+
+class FreeLocalizations extends StatefulWidget{
+
+  final Widget child;
+
+  FreeLocalizations({Key key,this.child}):super(key:key);
+
+  @override
+  State<FreeLocalizations> createState() {
+    return new _FreeLocalizations();
+  }
+}
+
+class _FreeLocalizations extends State<FreeLocalizations>{
+
+  Locale _locale = const Locale('zh','CH');
+
+  changeLocale(Locale locale){
+    setState((){
+      _locale = locale;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return new Localizations.override(
+      context: context,
+      locale: _locale,
+      child: widget.child,
+    );
+  }
 }
